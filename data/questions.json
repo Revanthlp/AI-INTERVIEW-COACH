@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "category": "HR",
+    "question": "Tell me about yourself.",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 2,
+    "category": "HR",
+    "question": "Why should we hire you?",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 3,
+    "category": "Python",
+    "question": "What is the difference between a list and a tuple in Python?",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 4,
+    "category": "Python",
+    "question": "What are Python dictionaries?",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 5,
+    "category": "Machine Learning",
+    "question": "What is supervised learning?",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 6,
+    "category": "Machine Learning",
+    "question": "What is overfitting?",
+    "difficulty": "Medium"
+  },
+  {
+    "id": 7,
+    "category": "GenAI",
+    "question": "What is Retrieval-Augmented Generation (RAG)?",
+    "difficulty": "Medium"
+  },
+  {
+    "id": 8,
+    "category": "GenAI",
+    "question": "What is an LLM?",
+    "difficulty": "Easy"
+  }
+]
