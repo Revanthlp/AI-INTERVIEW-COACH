@@ -21,6 +21,7 @@ def _generate(messages, max_new_tokens=150):
         do_sample=True,
         temperature=0.7,
         top_p=0.9,
+        clean_up_tokenization_spaces=False,
     )
 
     generated_text = result[0]["generated_text"]
@@ -37,9 +38,8 @@ def generate_answer(question: str) -> str:
             "role": "system",
             "content": (
                 "You are an AI Interview Coach. "
-                "Give clear, accurate, concise answers suitable for "
-                "a fresher preparing for technical interviews. "
-                "Use simple language and include examples when helpful."
+                "Give clear, accurate and concise answers "
+                "suitable for a fresher technical interview."
             ),
         },
         {
@@ -56,11 +56,10 @@ def evaluate_answer(question: str, answer: str) -> str:
         {
             "role": "system",
             "content": (
-                "You are an interview evaluator. "
-                "Evaluate a fresher's interview answer. "
-                "Give constructive feedback. "
-                "Mention what was done well, what needs improvement, "
-                "and one specific suggestion for a better answer."
+                "You are a professional technical interview evaluator. "
+                "Evaluate a fresher's answer. "
+                "Explain what was done well, what needs improvement, "
+                "and give one specific suggestion for a better answer."
             ),
         },
         {
@@ -83,11 +82,9 @@ def score_answer(question: str, answer: str) -> str:
             "content": (
                 "You are a professional technical interview evaluator. "
                 "Score the candidate's answer from 0 to 10. "
-                "Consider correctness, relevance, clarity, completeness, "
-                "and use of examples. "
-                "Return the score first in exactly this format: "
-                "Score: X/10. "
-                "Then briefly explain the reason for the score."
+                "Consider correctness, relevance, clarity and completeness. "
+                "Return the score first in this format: Score: X/10. "
+                "Then briefly explain the reason."
             ),
         },
         {
@@ -100,3 +97,56 @@ def score_answer(question: str, answer: str) -> str:
     ]
 
     return _generate(messages, 120)
+
+
+def structured_evaluate_answer(question: str, answer: str) -> str:
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a professional technical interview evaluator "
+                "for fresher candidates.\n\n"
+
+                "Evaluate the candidate answer using these four criteria:\n"
+                "1. Correctness\n"
+                "2. Relevance\n"
+                "3. Clarity\n"
+                "4. Completeness\n\n"
+
+                "Give each criterion a score from 0 to 10.\n"
+                "Then calculate an overall score from 0 to 10.\n\n"
+
+                "Return the response EXACTLY in this format:\n\n"
+
+                "Overall Score: X/10\n"
+                "Correctness: X/10\n"
+                "Relevance: X/10\n"
+                "Clarity: X/10\n"
+                "Completeness: X/10\n\n"
+
+                "Strengths:\n"
+                "- point 1\n"
+                "- point 2\n\n"
+
+                "Improvements:\n"
+                "- point 1\n"
+                "- point 2\n\n"
+
+                "Better Answer:\n"
+                "A concise improved interview answer.\n\n"
+
+                "Be accurate. "
+                "Do not give a high score simply because the answer is short. "
+                "Penalize missing important information."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Interview Question:\n{question}\n\n"
+                f"Candidate Answer:\n{answer}"
+            ),
+        },
+    ]
+
+    return _generate(messages, 250)

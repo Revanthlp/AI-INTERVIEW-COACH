@@ -16,7 +16,7 @@ st.title("🎯 AI Interview Coach")
 
 st.write(
     "Practice interview questions, generate AI answers, "
-    "and get feedback and scores on your interview responses."
+    "evaluate your responses, and get detailed interview scores."
 )
 
 
@@ -30,23 +30,40 @@ st.subheader("🔌 Backend Connection")
 
 
 if st.button("Check Backend"):
+
     try:
+
         response = requests.get(
             f"{API_URL}/health",
             timeout=10
         )
 
         if response.status_code == 200:
-            st.success("Backend is connected successfully!")
-            st.json(response.json())
+
+            st.success(
+                "Backend is connected successfully!"
+            )
+
+            st.json(
+                response.json()
+            )
+
         else:
+
             st.error(
-                f"Backend returned status code: {response.status_code}"
+                f"Backend returned status code: "
+                f"{response.status_code}"
             )
 
     except requests.exceptions.RequestException as error:
-        st.error("Could not connect to the FastAPI backend.")
-        st.code(str(error))
+
+        st.error(
+            "Could not connect to the FastAPI backend."
+        )
+
+        st.code(
+            str(error)
+        )
 
 
 # ============================================================
@@ -90,7 +107,6 @@ if st.button("Generate Answer"):
                     timeout=180
                 )
 
-
             if response.status_code == 200:
 
                 data = response.json()
@@ -99,7 +115,9 @@ if st.button("Generate Answer"):
                     "Answer generated!"
                 )
 
-                st.subheader("💡 AI Answer")
+                st.subheader(
+                    "💡 AI Answer"
+                )
 
                 st.write(
                     data["answer"]
@@ -182,7 +200,6 @@ if st.button("Evaluate My Answer"):
                     timeout=180
                 )
 
-
             if response.status_code == 200:
 
                 data = response.json()
@@ -218,7 +235,7 @@ if st.button("Evaluate My Answer"):
 
 
 # ============================================================
-# SCORE CANDIDATE ANSWER
+# INTERVIEW SCORE
 # ============================================================
 
 st.divider()
@@ -257,12 +274,9 @@ if st.button("Calculate Score"):
                     timeout=180
                 )
 
-
             if score_response.status_code == 200:
 
-                score_data = (
-                    score_response.json()
-                )
+                score_data = score_response.json()
 
                 st.success(
                     "Score calculated!"
@@ -277,6 +291,86 @@ if st.button("Calculate Score"):
                 st.error(
                     f"Backend returned status code: "
                     f"{score_response.status_code}"
+                )
+
+        except requests.exceptions.RequestException as error:
+
+            st.error(
+                "Could not connect to the FastAPI backend."
+            )
+
+            st.code(
+                str(error)
+            )
+
+
+# ============================================================
+# FULL INTERVIEW EVALUATION
+# ============================================================
+
+st.divider()
+
+st.subheader("🎯 Full Interview Evaluation")
+
+st.write(
+    "Get a complete evaluation with overall score, "
+    "individual criteria, strengths, improvements, "
+    "and a better answer."
+)
+
+
+if st.button("Run Full Evaluation"):
+
+    if not evaluation_question.strip():
+
+        st.warning(
+            "Please enter the interview question."
+        )
+
+    elif not candidate_answer.strip():
+
+        st.warning(
+            "Please enter your answer."
+        )
+
+    else:
+
+        try:
+
+            with st.spinner(
+                "AI is performing full interview evaluation..."
+            ):
+
+                full_response = requests.post(
+                    f"{API_URL}/structured-evaluate",
+                    json={
+                        "question": evaluation_question,
+                        "answer": candidate_answer
+                    },
+                    timeout=180
+                )
+
+            if full_response.status_code == 200:
+
+                full_data = full_response.json()
+
+                st.success(
+                    "Full evaluation completed!"
+                )
+
+                st.subheader(
+                    "🎯 Interview Evaluation"
+                )
+
+                st.write(
+                    full_data["evaluation"]
+                )
+
+            else:
+
+                st.error(
+                    f"Backend returned status code: "
+                    f"{full_response.status_code}"
                 )
 
         except requests.exceptions.RequestException as error:
@@ -308,7 +402,6 @@ if st.button("Load Questions"):
             timeout=10
         )
 
-
         if response.status_code == 200:
 
             data = response.json()
@@ -317,7 +410,6 @@ if st.button("Load Questions"):
                 f"Loaded {data['count']} "
                 "interview questions."
             )
-
 
             for item in data["questions"]:
 
@@ -333,14 +425,12 @@ if st.button("Load Questions"):
 
                 st.divider()
 
-
         else:
 
             st.error(
                 f"Backend returned status code: "
                 f"{response.status_code}"
             )
-
 
     except requests.exceptions.RequestException as error:
 

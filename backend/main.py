@@ -6,10 +6,14 @@ from fastapi import FastAPI
 from backend.schemas import QuestionRequest
 from backend.evaluation_schemas import AnswerEvaluationRequest
 from backend.scoring_schemas import AnswerScoreRequest
+from backend.structured_evaluation_schemas import (
+    StructuredEvaluationRequest,
+)
 from backend.ai_engine import (
     generate_answer,
     evaluate_answer,
     score_answer,
+    structured_evaluate_answer,
 )
 
 
@@ -84,4 +88,20 @@ def score_candidate_answer(
         "question": request.question,
         "answer": request.answer,
         "score": score
+    }
+
+
+@app.post("/structured-evaluate")
+def structured_evaluate_candidate_answer(
+    request: StructuredEvaluationRequest
+):
+    evaluation = structured_evaluate_answer(
+        request.question,
+        request.answer
+    )
+
+    return {
+        "question": request.question,
+        "answer": request.answer,
+        "evaluation": evaluation
     }
