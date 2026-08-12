@@ -2,6 +2,9 @@ from pathlib import Path
 import json
 
 from fastapi import FastAPI
+from backend.schemas import QuestionRequest
+from backend.ai_engine import generate_answer
+
 
 app = FastAPI(title="AI Interview Coach")
 
@@ -32,4 +35,14 @@ def get_questions():
     return {
         "count": len(questions),
         "questions": questions
+    }
+
+
+@app.post("/answer")
+def answer_question(request: QuestionRequest):
+    answer = generate_answer(request.question)
+
+    return {
+        "question": request.question,
+        "answer": answer
     }
