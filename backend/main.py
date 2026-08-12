@@ -2,8 +2,10 @@ from pathlib import Path
 import json
 
 from fastapi import FastAPI
+
 from backend.schemas import QuestionRequest
-from backend.ai_engine import generate_answer
+from backend.evaluation_schemas import AnswerEvaluationRequest
+from backend.ai_engine import generate_answer, evaluate_answer
 
 
 app = FastAPI(title="AI Interview Coach")
@@ -45,4 +47,20 @@ def answer_question(request: QuestionRequest):
     return {
         "question": request.question,
         "answer": answer
+    }
+
+
+@app.post("/evaluate")
+def evaluate_candidate_answer(
+    request: AnswerEvaluationRequest
+):
+    evaluation = evaluate_answer(
+        request.question,
+        request.answer
+    )
+
+    return {
+        "question": request.question,
+        "answer": request.answer,
+        "evaluation": evaluation
     }

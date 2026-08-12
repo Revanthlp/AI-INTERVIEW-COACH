@@ -47,3 +47,43 @@ def generate_answer(question: str) -> str:
         answer = generated_text
 
     return answer.strip()
+
+
+def evaluate_answer(question: str, answer: str) -> str:
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are an interview evaluator. "
+                "Evaluate a fresher's interview answer. "
+                "Give constructive feedback. "
+                "Mention what was done well, what needs improvement, "
+                "and one specific suggestion for a better answer."
+            )
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Interview Question:\n{question}\n\n"
+                f"Candidate Answer:\n{answer}\n\n"
+                "Evaluate this answer."
+            )
+        }
+    ]
+
+    result = generator(
+        messages,
+        max_new_tokens=200,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.9
+    )
+
+    generated_text = result[0]["generated_text"]
+
+    if isinstance(generated_text, list):
+        evaluation = generated_text[-1]["content"]
+    else:
+        evaluation = generated_text
+
+    return evaluation.strip()

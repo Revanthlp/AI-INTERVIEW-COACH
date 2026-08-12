@@ -14,7 +14,8 @@ st.set_page_config(
 st.title("🎯 AI Interview Coach")
 
 st.write(
-    "Practice interview questions and get AI-generated interview answers."
+    "Practice interview questions, generate AI answers, "
+    "and receive feedback on your own answers."
 )
 
 
@@ -45,13 +46,14 @@ if st.button("Check Backend"):
 
 st.divider()
 
-st.subheader("🤖 AI Interview Question")
+st.subheader("🤖 Generate Interview Answer")
 
 
 question = st.text_area(
-    "Enter your interview question:",
+    "Enter an interview question:",
     placeholder="Example: What is Python?",
-    height=120
+    height=120,
+    key="question_input"
 )
 
 
@@ -67,7 +69,7 @@ if st.button("Generate Answer"):
                     json={
                         "question": question
                     },
-                    timeout=120
+                    timeout=180
                 )
 
             if response.status_code == 200:
@@ -78,6 +80,65 @@ if st.button("Generate Answer"):
                 st.subheader("💡 AI Answer")
 
                 st.write(data["answer"])
+
+            else:
+                st.error(
+                    f"Backend returned status code: {response.status_code}"
+                )
+
+        except requests.exceptions.RequestException as error:
+            st.error("Could not connect to the FastAPI backend.")
+            st.code(str(error))
+
+
+st.divider()
+
+st.subheader("📝 Evaluate My Interview Answer")
+
+
+evaluation_question = st.text_area(
+    "Interview Question:",
+    placeholder="Example: What is Python?",
+    height=100,
+    key="evaluation_question"
+)
+
+
+candidate_answer = st.text_area(
+    "Your Answer:",
+    placeholder="Type the answer you would give in an interview...",
+    height=180,
+    key="candidate_answer"
+)
+
+
+if st.button("Evaluate My Answer"):
+    if not evaluation_question.strip():
+        st.warning("Please enter the interview question.")
+
+    elif not candidate_answer.strip():
+        st.warning("Please enter your answer.")
+
+    else:
+        try:
+            with st.spinner("AI is evaluating your answer..."):
+                response = requests.post(
+                    f"{API_URL}/evaluate",
+                    json={
+                        "question": evaluation_question,
+                        "answer": candidate_answer
+                    },
+                    timeout=180
+                )
+
+            if response.status_code == 200:
+                data = response.json()
+
+                st.success("Answer evaluated!")
+
+                st.subheader("📊 AI Feedback")
+
+                st.write(data["evaluation"])
 
             else:
                 st.error(
