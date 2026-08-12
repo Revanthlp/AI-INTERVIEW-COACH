@@ -14,6 +14,23 @@ generator = pipeline(
 print("AI model loaded successfully!")
 
 
+def _generate(messages, max_new_tokens=150):
+    result = generator(
+        messages,
+        max_new_tokens=max_new_tokens,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.9,
+    )
+
+    generated_text = result[0]["generated_text"]
+
+    if isinstance(generated_text, list):
+        return generated_text[-1]["content"].strip()
+
+    return generated_text.strip()
+
+
 def generate_answer(question: str) -> str:
     messages = [
         {
@@ -23,30 +40,15 @@ def generate_answer(question: str) -> str:
                 "Give clear, accurate, concise answers suitable for "
                 "a fresher preparing for technical interviews. "
                 "Use simple language and include examples when helpful."
-            )
+            ),
         },
         {
             "role": "user",
-            "content": question
-        }
+            "content": question,
+        },
     ]
 
-    result = generator(
-        messages,
-        max_new_tokens=150,
-        do_sample=True,
-        temperature=0.7,
-        top_p=0.9
-    )
-
-    generated_text = result[0]["generated_text"]
-
-    if isinstance(generated_text, list):
-        answer = generated_text[-1]["content"]
-    else:
-        answer = generated_text
-
-    return answer.strip()
+    return _generate(messages, 150)
 
 
 def evaluate_answer(question: str, answer: str) -> str:
@@ -59,7 +61,7 @@ def evaluate_answer(question: str, answer: str) -> str:
                 "Give constructive feedback. "
                 "Mention what was done well, what needs improvement, "
                 "and one specific suggestion for a better answer."
-            )
+            ),
         },
         {
             "role": "user",
@@ -67,23 +69,34 @@ def evaluate_answer(question: str, answer: str) -> str:
                 f"Interview Question:\n{question}\n\n"
                 f"Candidate Answer:\n{answer}\n\n"
                 "Evaluate this answer."
-            )
-        }
+            ),
+        },
     ]
 
-    result = generator(
-        messages,
-        max_new_tokens=200,
-        do_sample=True,
-        temperature=0.7,
-        top_p=0.9
-    )
+    return _generate(messages, 200)
 
-    generated_text = result[0]["generated_text"]
 
-    if isinstance(generated_text, list):
-        evaluation = generated_text[-1]["content"]
-    else:
-        evaluation = generated_text
+def score_answer(question: str, answer: str) -> str:
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a professional technical interview evaluator. "
+                "Score the candidate's answer from 0 to 10. "
+                "Consider correctness, relevance, clarity, completeness, "
+                "and use of examples. "
+                "Return the score first in exactly this format: "
+                "Score: X/10. "
+                "Then briefly explain the reason for the score."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Interview Question:\n{question}\n\n"
+                f"Candidate Answer:\n{answer}"
+            ),
+        },
+    ]
 
-    return evaluation.strip()
+    return _generate(messages, 120)

@@ -5,7 +5,12 @@ from fastapi import FastAPI
 
 from backend.schemas import QuestionRequest
 from backend.evaluation_schemas import AnswerEvaluationRequest
-from backend.ai_engine import generate_answer, evaluate_answer
+from backend.scoring_schemas import AnswerScoreRequest
+from backend.ai_engine import (
+    generate_answer,
+    evaluate_answer,
+    score_answer,
+)
 
 
 app = FastAPI(title="AI Interview Coach")
@@ -63,4 +68,20 @@ def evaluate_candidate_answer(
         "question": request.question,
         "answer": request.answer,
         "evaluation": evaluation
+    }
+
+
+@app.post("/score")
+def score_candidate_answer(
+    request: AnswerScoreRequest
+):
+    score = score_answer(
+        request.question,
+        request.answer
+    )
+
+    return {
+        "question": request.question,
+        "answer": request.answer,
+        "score": score
     }
