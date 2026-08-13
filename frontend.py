@@ -5,6 +5,10 @@ import requests
 API_URL = "http://127.0.0.1:8000"
 
 
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
+
 st.set_page_config(
     page_title="AI Interview Coach",
     page_icon="🎯",
@@ -18,6 +22,20 @@ st.write(
     "Practice interview questions, generate AI answers, "
     "evaluate your responses, and get detailed interview scores."
 )
+
+
+# ============================================================
+# SESSION STATE
+# ============================================================
+
+if "interview_history" not in st.session_state:
+
+    st.session_state.interview_history = []
+
+
+if "last_evaluation" not in st.session_state:
+
+    st.session_state.last_evaluation = None
 
 
 # ============================================================
@@ -223,6 +241,10 @@ if st.button("Evaluate My Answer"):
                     f"{response.status_code}"
                 )
 
+                st.code(
+                    response.text
+                )
+
         except requests.exceptions.RequestException as error:
 
             st.error(
@@ -293,6 +315,10 @@ if st.button("Calculate Score"):
                     f"{score_response.status_code}"
                 )
 
+                st.code(
+                    score_response.text
+                )
+
         except requests.exceptions.RequestException as error:
 
             st.error(
@@ -357,9 +383,61 @@ if st.button(
 
                 data = response.json()
 
+                # ====================================================
+                # SAVE EVALUATION TO INTERVIEW SESSION
+                # ====================================================
+
+                session_record = {
+                    "question": evaluation_question.strip(),
+                    "answer": candidate_answer.strip(),
+                    "overall_score": int(
+                        data.get("overall_score", 0)
+                    ),
+                    "correctness": int(
+                        data.get("correctness", 0)
+                    ),
+                    "relevance": int(
+                        data.get("relevance", 0)
+                    ),
+                    "clarity": int(
+                        data.get("clarity", 0)
+                    ),
+                    "completeness": int(
+                        data.get("completeness", 0)
+                    ),
+                    "strengths": data.get(
+                        "strengths",
+                        []
+                    ),
+                    "improvements": data.get(
+                        "improvements",
+                        []
+                    ),
+                    "better_answer": data.get(
+                        "better_answer",
+                        ""
+                    )
+                }
+
+
+                st.session_state.interview_history.append(
+                    session_record
+                )
+
+
+                st.session_state.last_evaluation = (
+                    session_record
+                )
+
+
                 st.success(
                     "Performance report generated!"
                 )
+
+
+                # ====================================================
+                # CURRENT PERFORMANCE REPORT
+                # ====================================================
 
                 st.subheader(
                     "📊 Overall Performance"
@@ -481,15 +559,342 @@ if st.button(
 
 
 # ============================================================
+# INTERVIEW SESSION SUMMARY
+# ============================================================
+
+st.divider()
+
+st.subheader(
+    "📋 Interview Session Summary"
+)
+
+
+history = st.session_state.interview_history
+
+
+if not history:
+
+    st.info(
+        "Complete at least one performance report "
+        "to start your interview session."
+    )
+
+else:
+
+    total_questions = len(history)
+
+
+    average_overall = (
+        sum(
+            item["overall_score"]
+            for item in history
+        )
+        / total_questions
+    )
+
+
+    average_correctness = (
+        sum(
+            item["correctness"]
+            for item in history
+        )
+        / total_questions
+    )
+
+
+    average_relevance = (
+        sum(
+            item["relevance"]
+            for item in history
+        )
+        / total_questions
+    )
+
+
+    average_clarity = (
+        sum(
+            item["clarity"]
+            for item in history
+        )
+        / total_questions
+    )
+
+
+    average_completeness = (
+        sum(
+            item["completeness"]
+            for item in history
+        )
+        / total_questions
+    )
+
+
+    # ========================================================
+    # FIND STRONGEST AND WEAKEST AREAS
+    # ========================================================
+
+    category_scores = {
+        "Correctness": average_correctness,
+        "Relevance": average_relevance,
+        "Clarity": average_clarity,
+        "Completeness": average_completeness
+    }
+
+
+    strongest_area = max(
+        category_scores,
+        key=category_scores.get
+    )
+
+
+    weakest_area = min(
+        category_scores,
+        key=category_scores.get
+    )
+
+
+    # ========================================================
+    # SESSION METRICS
+    # ========================================================
+
+    summary_col1, summary_col2, summary_col3 = st.columns(3)
+
+
+    with summary_col1:
+
+        st.metric(
+            "Questions Completed",
+            total_questions
+        )
+
+
+    with summary_col2:
+
+        st.metric(
+            "Average Score",
+            f"{average_overall:.1f}/10"
+        )
+
+
+    with summary_col3:
+
+        st.metric(
+            "Strongest Area",
+            strongest_area
+        )
+
+
+    st.subheader(
+        "📈 Session Performance"
+    )
+
+
+    metric_col1, metric_col2 = st.columns(2)
+
+
+    with metric_col1:
+
+        st.metric(
+            "Average Correctness",
+            f"{average_correctness:.1f}/10"
+        )
+
+        st.metric(
+            "Average Clarity",
+            f"{average_clarity:.1f}/10"
+        )
+
+
+    with metric_col2:
+
+        st.metric(
+            "Average Relevance",
+            f"{average_relevance:.1f}/10"
+        )
+
+        st.metric(
+            "Average Completeness",
+            f"{average_completeness:.1f}/10"
+        )
+
+
+    st.subheader(
+        "💡 Interview Coaching Insight"
+    )
+
+
+    if average_overall >= 8:
+
+        st.success(
+            f"Great performance! Your current average is "
+            f"{average_overall:.1f}/10. Keep practicing "
+            f"to make your answers more consistent."
+        )
+
+    elif average_overall >= 6:
+
+        st.warning(
+            f"Your current average is "
+            f"{average_overall:.1f}/10. "
+            f"Focus especially on your {weakest_area.lower()} "
+            f"to improve your interview performance."
+        )
+
+    else:
+
+        st.error(
+            f"Your current average is "
+            f"{average_overall:.1f}/10. "
+            f"Focus on building stronger and more complete "
+            f"answers, especially in {weakest_area.lower()}."
+        )
+
+
+    st.info(
+        f"Strongest area: {strongest_area} "
+        f"({category_scores[strongest_area]:.1f}/10)\n\n"
+        f"Area to improve: {weakest_area} "
+        f"({category_scores[weakest_area]:.1f}/10)"
+    )
+
+
+    # ========================================================
+    # QUESTION-BY-QUESTION HISTORY
+    # ========================================================
+
+    st.subheader(
+        "📝 Question History"
+    )
+
+
+    for index, item in enumerate(
+        history,
+        start=1
+    ):
+
+        with st.expander(
+            f"Question {index}: "
+            f"{item['question']}"
+        ):
+
+            st.write(
+                "**Your Answer:**"
+            )
+
+            st.write(
+                item["answer"]
+            )
+
+
+            history_col1, history_col2, history_col3 = st.columns(3)
+
+
+            with history_col1:
+
+                st.metric(
+                    "Overall",
+                    f"{item['overall_score']}/10"
+                )
+
+
+            with history_col2:
+
+                st.metric(
+                    "Correctness",
+                    f"{item['correctness']}/10"
+                )
+
+
+            with history_col3:
+
+                st.metric(
+                    "Clarity",
+                    f"{item['clarity']}/10"
+                )
+
+
+            st.write(
+                "**Relevance:** "
+                f"{item['relevance']}/10"
+            )
+
+
+            st.write(
+                "**Completeness:** "
+                f"{item['completeness']}/10"
+            )
+
+
+            if item["strengths"]:
+
+                st.write(
+                    "**Strengths:**"
+                )
+
+                for strength in item["strengths"]:
+
+                    st.success(
+                        f"✓ {strength}"
+                    )
+
+
+            if item["improvements"]:
+
+                st.write(
+                    "**Improvements:**"
+                )
+
+                for improvement in item["improvements"]:
+
+                    st.warning(
+                        f"• {improvement}"
+                    )
+
+
+            st.write(
+                "**Better Answer:**"
+            )
+
+            st.info(
+                item["better_answer"]
+            )
+
+
+    # ========================================================
+    # CLEAR SESSION
+    # ========================================================
+
+    st.divider()
+
+    if st.button(
+        "🗑️ Clear Interview Session"
+    ):
+
+        st.session_state.interview_history = []
+
+        st.session_state.last_evaluation = None
+
+        st.success(
+            "Interview session cleared."
+        )
+
+        st.rerun()
+
+
+# ============================================================
 # INTERVIEW QUESTIONS
 # ============================================================
 
 st.divider()
 
-st.subheader("📚 Interview Questions")
+st.subheader(
+    "📚 Interview Questions"
+)
 
 
-if st.button("Load Questions"):
+if st.button(
+    "Load Questions"
+):
 
     try:
 
