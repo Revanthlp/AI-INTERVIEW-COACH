@@ -305,21 +305,24 @@ if st.button("Calculate Score"):
 
 
 # ============================================================
-# FULL INTERVIEW EVALUATION
+# FULL JSON INTERVIEW EVALUATION
 # ============================================================
 
 st.divider()
 
-st.subheader("🎯 Full Interview Evaluation")
+st.subheader(
+    "🎯 AI Interview Performance Report"
+)
 
 st.write(
-    "Get a complete evaluation with overall score, "
-    "individual criteria, strengths, improvements, "
-    "and a better answer."
+    "Get a structured evaluation with individual scores, "
+    "strengths, improvements, and a better answer."
 )
 
 
-if st.button("Run Full Evaluation"):
+if st.button(
+    "Generate Performance Report"
+):
 
     if not evaluation_question.strip():
 
@@ -338,11 +341,11 @@ if st.button("Run Full Evaluation"):
         try:
 
             with st.spinner(
-                "AI is performing full interview evaluation..."
+                "AI is analyzing your interview answer..."
             ):
 
-                full_response = requests.post(
-                    f"{API_URL}/structured-evaluate",
+                response = requests.post(
+                    f"{API_URL}/json-evaluate",
                     json={
                         "question": evaluation_question,
                         "answer": candidate_answer
@@ -350,28 +353,121 @@ if st.button("Run Full Evaluation"):
                     timeout=180
                 )
 
-            if full_response.status_code == 200:
+            if response.status_code == 200:
 
-                full_data = full_response.json()
+                data = response.json()
 
                 st.success(
-                    "Full evaluation completed!"
+                    "Performance report generated!"
                 )
 
                 st.subheader(
-                    "🎯 Interview Evaluation"
+                    "📊 Overall Performance"
                 )
 
-                st.write(
-                    full_data["evaluation"]
+                st.metric(
+                    "Overall Score",
+                    f"{data['overall_score']}/10"
                 )
+
+
+                st.subheader(
+                    "📈 Evaluation Breakdown"
+                )
+
+                col1, col2, col3, col4 = st.columns(4)
+
+
+                with col1:
+
+                    st.metric(
+                        "Correctness",
+                        f"{data['correctness']}/10"
+                    )
+
+
+                with col2:
+
+                    st.metric(
+                        "Relevance",
+                        f"{data['relevance']}/10"
+                    )
+
+
+                with col3:
+
+                    st.metric(
+                        "Clarity",
+                        f"{data['clarity']}/10"
+                    )
+
+
+                with col4:
+
+                    st.metric(
+                        "Completeness",
+                        f"{data['completeness']}/10"
+                    )
+
+
+                st.subheader(
+                    "💪 Strengths"
+                )
+
+                if data["strengths"]:
+
+                    for strength in data["strengths"]:
+
+                        st.success(
+                            f"✓ {strength}"
+                        )
+
+                else:
+
+                    st.info(
+                        "No specific strengths were returned."
+                    )
+
+
+                st.subheader(
+                    "⚠️ Improvements"
+                )
+
+                if data["improvements"]:
+
+                    for improvement in data["improvements"]:
+
+                        st.warning(
+                            f"• {improvement}"
+                        )
+
+                else:
+
+                    st.info(
+                        "No specific improvements were returned."
+                    )
+
+
+                st.subheader(
+                    "🎯 Better Answer"
+                )
+
+                st.info(
+                    data["better_answer"]
+                )
+
 
             else:
 
                 st.error(
                     f"Backend returned status code: "
-                    f"{full_response.status_code}"
+                    f"{response.status_code}"
                 )
+
+                st.code(
+                    response.text
+                )
+
 
         except requests.exceptions.RequestException as error:
 

@@ -1,3 +1,5 @@
+import json
+
 from transformers import pipeline
 
 
@@ -33,6 +35,7 @@ def _generate(messages, max_new_tokens=150):
 
 
 def generate_answer(question: str) -> str:
+
     messages = [
         {
             "role": "system",
@@ -52,6 +55,7 @@ def generate_answer(question: str) -> str:
 
 
 def evaluate_answer(question: str, answer: str) -> str:
+
     messages = [
         {
             "role": "system",
@@ -76,6 +80,7 @@ def evaluate_answer(question: str, answer: str) -> str:
 
 
 def score_answer(question: str, answer: str) -> str:
+
     messages = [
         {
             "role": "system",
@@ -100,6 +105,7 @@ def score_answer(question: str, answer: str) -> str:
 
 
 def structured_evaluate_answer(question: str, answer: str) -> str:
+
     messages = [
         {
             "role": "system",
@@ -116,7 +122,7 @@ def structured_evaluate_answer(question: str, answer: str) -> str:
                 "Give each criterion a score from 0 to 10.\n"
                 "Then calculate an overall score from 0 to 10.\n\n"
 
-                "Return the response EXACTLY in this format:\n\n"
+                "Return the response exactly in this format:\n\n"
 
                 "Overall Score: X/10\n"
                 "Correctness: X/10\n"
@@ -133,11 +139,7 @@ def structured_evaluate_answer(question: str, answer: str) -> str:
                 "- point 2\n\n"
 
                 "Better Answer:\n"
-                "A concise improved interview answer.\n\n"
-
-                "Be accurate. "
-                "Do not give a high score simply because the answer is short. "
-                "Penalize missing important information."
+                "A concise improved interview answer."
             ),
         },
         {
@@ -150,3 +152,86 @@ def structured_evaluate_answer(question: str, answer: str) -> str:
     ]
 
     return _generate(messages, 250)
+
+
+def json_evaluate_answer(question: str, answer: str):
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a professional technical interview evaluator.\n\n"
+
+                "Evaluate the candidate's answer using these criteria:\n"
+                "- correctness\n"
+                "- relevance\n"
+                "- clarity\n"
+                "- completeness\n\n"
+
+                "Each score must be an INTEGER from 0 to 10.\n"
+                "The overall_score must also be an INTEGER from 0 to 10.\n\n"
+
+                "Return ONLY valid JSON.\n"
+                "Do not use markdown.\n"
+                "Do not use ```json.\n"
+                "Do not add explanations outside the JSON.\n\n"
+
+                "Use exactly this structure:\n"
+                "{\n"
+                '  "overall_score": 8,\n'
+                '  "correctness": 8,\n'
+                '  "relevance": 8,\n'
+                '  "clarity": 8,\n'
+                '  "completeness": 8,\n'
+                '  "strengths": ["strength 1", "strength 2"],\n'
+                '  "improvements": ["improvement 1", "improvement 2"],\n'
+                '  "better_answer": "Improved interview answer"\n'
+                "}\n\n"
+
+                "Make sure the JSON is valid and contains all fields."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Interview Question:\n{question}\n\n"
+                f"Candidate Answer:\n{answer}"
+            ),
+        },
+    ]
+
+    raw_response = _generate(messages, 300)
+
+    try:
+        return json.loads(raw_response)
+    except json.JSONDecodeError:
+
+        start = raw_response.find("{")
+        end = raw_response.rfind("}")
+
+        if start != -1 and end != -1:
+
+            json_text = raw_response[
+                start:end + 1
+            ]
+
+            try:
+                return json.loads(json_text)
+
+            except json.JSONDecodeError:
+                pass
+
+        return {
+            "overall_score": 0,
+            "correctness": 0,
+            "relevance": 0,
+            "clarity": 0,
+            "completeness": 0,
+            "strengths": [
+                "The AI response could not be parsed."
+            ],
+            "improvements": [
+                "Please try the evaluation again."
+            ],
+            "better_answer": ""
+        }

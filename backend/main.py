@@ -9,23 +9,35 @@ from backend.scoring_schemas import AnswerScoreRequest
 from backend.structured_evaluation_schemas import (
     StructuredEvaluationRequest,
 )
+from backend.json_evaluation_schemas import (
+    JSONEvaluationRequest,
+    JSONEvaluationResponse,
+)
+
 from backend.ai_engine import (
     generate_answer,
     evaluate_answer,
     score_answer,
     structured_evaluate_answer,
+    json_evaluate_answer,
 )
 
 
-app = FastAPI(title="AI Interview Coach")
+app = FastAPI(
+    title="AI Interview Coach"
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-QUESTIONS_FILE = BASE_DIR / "data" / "questions.json"
+
+QUESTIONS_FILE = (
+    BASE_DIR / "data" / "questions.json"
+)
 
 
 @app.get("/")
 def home():
+
     return {
         "message": "AI Interview Coach API is running!"
     }
@@ -33,6 +45,7 @@ def home():
 
 @app.get("/health")
 def health_check():
+
     return {
         "status": "healthy"
     }
@@ -40,7 +53,13 @@ def health_check():
 
 @app.get("/questions")
 def get_questions():
-    with open(QUESTIONS_FILE, "r", encoding="utf-8") as file:
+
+    with open(
+        QUESTIONS_FILE,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
         questions = json.load(file)
 
     return {
@@ -50,8 +69,13 @@ def get_questions():
 
 
 @app.post("/answer")
-def answer_question(request: QuestionRequest):
-    answer = generate_answer(request.question)
+def answer_question(
+    request: QuestionRequest
+):
+
+    answer = generate_answer(
+        request.question
+    )
 
     return {
         "question": request.question,
@@ -63,6 +87,7 @@ def answer_question(request: QuestionRequest):
 def evaluate_candidate_answer(
     request: AnswerEvaluationRequest
 ):
+
     evaluation = evaluate_answer(
         request.question,
         request.answer
@@ -79,6 +104,7 @@ def evaluate_candidate_answer(
 def score_candidate_answer(
     request: AnswerScoreRequest
 ):
+
     score = score_answer(
         request.question,
         request.answer
@@ -95,6 +121,7 @@ def score_candidate_answer(
 def structured_evaluate_candidate_answer(
     request: StructuredEvaluationRequest
 ):
+
     evaluation = structured_evaluate_answer(
         request.question,
         request.answer
@@ -105,3 +132,19 @@ def structured_evaluate_candidate_answer(
         "answer": request.answer,
         "evaluation": evaluation
     }
+
+
+@app.post(
+    "/json-evaluate",
+    response_model=JSONEvaluationResponse
+)
+def json_evaluate_candidate_answer(
+    request: JSONEvaluationRequest
+):
+
+    evaluation = json_evaluate_answer(
+        request.question,
+        request.answer
+    )
+
+    return evaluation
