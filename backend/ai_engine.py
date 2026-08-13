@@ -17,6 +17,7 @@ print("AI model loaded successfully!")
 
 
 def _generate(messages, max_new_tokens=150):
+
     result = generator(
         messages,
         max_new_tokens=max_new_tokens,
@@ -29,6 +30,7 @@ def _generate(messages, max_new_tokens=150):
     generated_text = result[0]["generated_text"]
 
     if isinstance(generated_text, list):
+
         return generated_text[-1]["content"].strip()
 
     return generated_text.strip()
@@ -54,7 +56,10 @@ def generate_answer(question: str) -> str:
     return _generate(messages, 150)
 
 
-def evaluate_answer(question: str, answer: str) -> str:
+def evaluate_answer(
+    question: str,
+    answer: str
+) -> str:
 
     messages = [
         {
@@ -79,7 +84,10 @@ def evaluate_answer(question: str, answer: str) -> str:
     return _generate(messages, 200)
 
 
-def score_answer(question: str, answer: str) -> str:
+def score_answer(
+    question: str,
+    answer: str
+) -> str:
 
     messages = [
         {
@@ -104,7 +112,10 @@ def score_answer(question: str, answer: str) -> str:
     return _generate(messages, 120)
 
 
-def structured_evaluate_answer(question: str, answer: str) -> str:
+def structured_evaluate_answer(
+    question: str,
+    answer: str
+) -> str:
 
     messages = [
         {
@@ -154,41 +165,68 @@ def structured_evaluate_answer(question: str, answer: str) -> str:
     return _generate(messages, 250)
 
 
-def json_evaluate_answer(question: str, answer: str):
+def json_evaluate_answer(
+    question: str,
+    answer: str
+):
 
     messages = [
         {
             "role": "system",
             "content": (
-                "You are a professional technical interview evaluator.\n\n"
+                "You are a professional technical interview evaluator "
+                "for fresher candidates.\n\n"
 
-                "Evaluate the candidate's answer using these criteria:\n"
-                "- correctness\n"
-                "- relevance\n"
-                "- clarity\n"
-                "- completeness\n\n"
+                "Evaluate the candidate's answer fairly.\n\n"
+
+                "Evaluate:\n"
+                "1. correctness\n"
+                "2. relevance\n"
+                "3. clarity\n"
+                "4. completeness\n\n"
 
                 "Each score must be an INTEGER from 0 to 10.\n"
-                "The overall_score must also be an INTEGER from 0 to 10.\n\n"
+                "The overall_score must be an INTEGER from 0 to 10.\n\n"
+
+                "IMPORTANT:\n"
+
+                "- Always provide at least one strength when the "
+                "candidate gives correct information.\n"
+
+                "- Always provide at least one improvement unless "
+                "the answer is exceptionally complete.\n"
+
+                "- Do not invent mistakes.\n"
+
+                "- Improvements must be useful interview advice.\n"
+
+                "- better_answer must directly answer the question.\n"
+
+                "- better_answer must be a complete standalone answer.\n"
+
+                "- Do NOT return placeholder text such as "
+                "'Improved interview answer'.\n"
+
+                "- Do NOT return 'No direct answer provided'.\n"
+
+                "- Do NOT put labels before the better answer.\n\n"
 
                 "Return ONLY valid JSON.\n"
                 "Do not use markdown.\n"
                 "Do not use ```json.\n"
-                "Do not add explanations outside the JSON.\n\n"
+                "Do not add explanations outside JSON.\n\n"
 
-                "Use exactly this structure:\n"
+                "Use this JSON structure:\n"
                 "{\n"
                 '  "overall_score": 8,\n'
                 '  "correctness": 8,\n'
                 '  "relevance": 8,\n'
                 '  "clarity": 8,\n'
                 '  "completeness": 8,\n'
-                '  "strengths": ["strength 1", "strength 2"],\n'
-                '  "improvements": ["improvement 1", "improvement 2"],\n'
-                '  "better_answer": "Improved interview answer"\n'
-                "}\n\n"
-
-                "Make sure the JSON is valid and contains all fields."
+                '  "strengths": ["strength 1"],\n'
+                '  "improvements": ["improvement 1"],\n'
+                '  "better_answer": "Write the actual improved answer here"\n'
+                "}"
             ),
         },
         {
@@ -200,38 +238,235 @@ def json_evaluate_answer(question: str, answer: str):
         },
     ]
 
-    raw_response = _generate(messages, 300)
+    raw_response = _generate(
+        messages,
+        300
+    )
 
     try:
-        return json.loads(raw_response)
+
+        evaluation = json.loads(
+            raw_response
+        )
+
     except json.JSONDecodeError:
 
         start = raw_response.find("{")
         end = raw_response.rfind("}")
 
-        if start != -1 and end != -1:
+        if start == -1 or end == -1:
 
-            json_text = raw_response[
-                start:end + 1
-            ]
+            return {
+                "overall_score": 0,
+                "correctness": 0,
+                "relevance": 0,
+                "clarity": 0,
+                "completeness": 0,
+                "strengths": [
+                    "The AI response could not be parsed."
+                ],
+                "improvements": [
+                    "Please try the evaluation again."
+                ],
+                "better_answer": answer.strip()
+            }
 
-            try:
-                return json.loads(json_text)
+        try:
 
-            except json.JSONDecodeError:
-                pass
+            evaluation = json.loads(
+                raw_response[start:end + 1]
+            )
 
-        return {
-            "overall_score": 0,
-            "correctness": 0,
-            "relevance": 0,
-            "clarity": 0,
-            "completeness": 0,
-            "strengths": [
-                "The AI response could not be parsed."
-            ],
-            "improvements": [
-                "Please try the evaluation again."
-            ],
-            "better_answer": ""
-        }
+        except json.JSONDecodeError:
+
+            return {
+                "overall_score": 0,
+                "correctness": 0,
+                "relevance": 0,
+                "clarity": 0,
+                "completeness": 0,
+                "strengths": [
+                    "The AI response could not be parsed."
+                ],
+                "improvements": [
+                    "Please try the evaluation again."
+                ],
+                "better_answer": answer.strip()
+            }
+
+
+    # ========================================================
+    # SCORE NORMALIZATION
+    # ========================================================
+
+    score_fields = [
+        "overall_score",
+        "correctness",
+        "relevance",
+        "clarity",
+        "completeness"
+    ]
+
+    for field in score_fields:
+
+        value = evaluation.get(
+            field,
+            0
+        )
+
+        try:
+
+            value = int(value)
+
+        except (TypeError, ValueError):
+
+            value = 0
+
+        evaluation[field] = max(
+            0,
+            min(10, value)
+        )
+
+
+    # ========================================================
+    # STRENGTHS
+    # ========================================================
+
+    strengths = evaluation.get(
+        "strengths",
+        []
+    )
+
+    if not isinstance(
+        strengths,
+        list
+    ):
+
+        strengths = [
+            str(strengths)
+        ]
+
+    strengths = [
+        str(item).strip()
+        for item in strengths
+        if str(item).strip()
+    ]
+
+    if not strengths and answer.strip():
+
+        strengths.append(
+            "The candidate provided a relevant response to the question."
+        )
+
+
+    # ========================================================
+    # IMPROVEMENTS
+    # ========================================================
+
+    improvements = evaluation.get(
+        "improvements",
+        []
+    )
+
+    if not isinstance(
+        improvements,
+        list
+    ):
+
+        improvements = [
+            str(improvements)
+        ]
+
+    improvements = [
+        str(item).strip()
+        for item in improvements
+        if str(item).strip()
+    ]
+
+    if not improvements:
+
+        improvements.append(
+            "Add one or two specific details or examples "
+            "to make the answer stronger."
+        )
+
+
+    # ========================================================
+    # BETTER ANSWER
+    # ========================================================
+
+    better_answer = evaluation.get(
+        "better_answer",
+        ""
+    )
+
+    if not isinstance(
+        better_answer,
+        str
+    ):
+
+        better_answer = str(
+            better_answer
+        )
+
+    better_answer = better_answer.strip()
+
+
+    # Remove common labels.
+
+    prefixes = [
+        "Improved interview answer:",
+        "Better Answer:",
+        "Better answer:",
+        "Improved Answer:",
+        "Improved answer:"
+    ]
+
+    for prefix in prefixes:
+
+        if better_answer.startswith(prefix):
+
+            better_answer = (
+                better_answer[
+                    len(prefix):
+                ].strip()
+            )
+
+
+    # Detect placeholder responses.
+
+    invalid_better_answers = [
+        "",
+        "No direct answer provided.",
+        "No direct answer provided",
+        "Improved interview answer",
+        "Improved Interview Answer",
+        "Better Answer",
+        "Better answer",
+        "Improved Answer",
+        "Improved answer",
+        "Write the actual improved answer here",
+        "Write an improved interview answer here",
+        "N/A",
+        "None",
+        "Not provided"
+    ]
+
+
+    if better_answer in invalid_better_answers:
+
+        better_answer = answer.strip()
+
+
+    # ========================================================
+    # FINAL RESPONSE
+    # ========================================================
+
+    evaluation["strengths"] = strengths
+
+    evaluation["improvements"] = improvements
+
+    evaluation["better_answer"] = better_answer
+
+
+    return evaluation
